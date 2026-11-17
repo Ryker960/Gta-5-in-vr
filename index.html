@@ -1,1 +1,97 @@
-
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Los Santos VR — Prototype</title>
+  <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+  <style>
+    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101820;font-family:Arial,sans-serif}
+    #status{position:fixed;z-index:5;top:12px;left:12px;right:12px;padding:12px 14px;border-radius:10px;background:#101820dd;color:white;font-size:14px}
+    #status small{display:block;color:#b8c6cc;margin-top:5px}
+    #error{display:none;color:#ffb4a9}
+  </style>
+</head>
+<body>
+  <div id="status">LOS SANTOS VR <small>Loading the city… On Quest, tap Enter VR to put on your headset view.</small><small id="error"></small></div>
+  <a-scene renderer="antialias: true; colorManagement: true" vr-mode-ui="enabled: true" background="color: #91c7e8" loading-screen="enabled: false">
+    <a-assets>
+      <a-mixin id="building" material="roughness: 0.9"></a-mixin>
+    </a-assets>
+    <a-sky color="#91c7e8"></a-sky>
+    <a-plane rotation="-90 0 0" width="700" height="700" color="#657b4b" position="0 -0.08 0"></a-plane>
+    <a-entity id="city"></a-entity>
+    <a-entity id="player" position="0 0 8">
+      <a-camera position="0 1.65 0" look-controls wasd-controls="acceleration: 45">
+        <a-cursor color="#ffffff" fuse="false"></a-cursor>
+      </a-camera>
+      <a-entity laser-controls="hand: right"></a-entity>
+      <a-entity laser-controls="hand: left"></a-entity>
+    </a-entity>
+    <a-light type="ambient" color="#ffffff" intensity="0.75"></a-light>
+    <a-light type="directional" position="-30 60 20" intensity="1.1"></a-light>
+  </a-scene>
+  <script>
+  (function(){
+    const scene=document.querySelector('a-scene');
+    const city=document.querySelector('#city');
+    const status=document.querySelector('#status');
+    const error=document.querySelector('#error');
+    function box(parent,x,y,z,w,h,d,color){
+      const el=document.createElement('a-box');
+      el.setAttribute('position',x+' '+y+' '+z);
+      el.setAttribute('width',w);el.setAttribute('height',h);el.setAttribute('depth',d);
+      el.setAttribute('color',color);el.setAttribute('material','roughness: 0.92');
+      parent.appendChild(el);
+      return el;
+    }
+    function makeCity(){
+      const colors=['#b9a58b','#c9c2b4','#8e999b','#d1b58b','#a3a9a6','#b5b0a4','#8d969c'];
+      // One continuous starter district with a connected street grid.
+      for(let gx=-5;gx<=5;gx++){
+        for(let gz=-5;gz<=5;gz++){
+          const x=gx*28,z=gz*28;
+          box(city,x,-0.015,z,9,0.08,28,'#303438');
+          box(city,x,-0.005,z,0.18,0.03,28,'#e8d78a');
+          box(city,x,-0.015,z,28,0.08,9,'#303438');
+          box(city,x,-0.005,z,28,0.03,0.18,'#e8d78a');
+          if(Math.abs(gx)%2===0 && Math.abs(gz)%2===0){
+            const w=12+(Math.abs(gx*3+gz*5)%7),d=12+(Math.abs(gx*5-gz*2)%7);
+            const h=9+(Math.abs(gx*7+gz*11)%6)*4;
+            const b=box(city,x+14,-0.02+h/2,z+14,w,h,d,colors[(gx*gx+gz*gz)%colors.length]);
+            // Simple dark window strips on the street-facing side.
+            for(let floor=1;floor<Math.min(7,Math.floor(h/3));floor++){
+              box(city,x+14,-0.02+floor*3,z+14+d/2+0.03,w*0.72,0.75,0.06,'#425b68');
+            }
+          } else {
+            // Low buildings and small green lots make the district less repetitive.
+            if((gx+gz)%3===0){
+              box(city,x+14,1.5,z+14,13,3,13,'#9d927e');
+            } else {
+              const park=document.createElement('a-cylinder');
+              park.setAttribute('position',(x+14)+' 0.25 '+(z+14));
+              park.setAttribute('radius',3);park.setAttribute('height',0.5);park.setAttribute('color','#477443');
+              city.appendChild(park);
+            }
+          }
+        }
+      }
+      // Landmark sign at the edge of the starter district.
+      box(city,0,5,-155,34,10,1.2,'#263a35');
+      const sign=document.createElement('a-text');
+      sign.setAttribute('value','LOS SANTOS');sign.setAttribute('align','center');
+      sign.setAttribute('color','#ffffff');sign.setAttribute('width','18');
+      sign.setAttribute('position','0 5 -154.3');city.appendChild(sign);
+    }
+    function ready(){
+      makeCity();
+      status.innerHTML='LOS SANTOS VR <small>City loaded. Desktop testing: use WASD and drag to look. Quest: use Enter VR. This is an original placeholder city, not Rockstar’s GTA V map.</small>';
+    }
+    if(scene.hasLoaded) ready(); else scene.addEventListener('loaded',ready,{once:true});
+    setTimeout(function(){
+      if(!window.AFRAME){error.style.display='block';error.textContent='3D engine did not load. Check your internet connection, then refresh.';}
+    },7000);
+  })();
+  </script>
+</body>
+</html>
